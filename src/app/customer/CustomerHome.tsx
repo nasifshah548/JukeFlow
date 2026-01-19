@@ -1,22 +1,12 @@
-import { JSX, useState } from "react";
+import { JSX } from "react";
 import { motion } from "framer-motion";
 import fakeSongs from "../../data/fakeSongs";
 import NeonCard from "../../components/ui/NeonCard";
 import GlowButton from "../../components/ui/GlowButton";
-
-// Song type (shared across app later)
-type Song = {
-  id: number;
-  title: string;
-  artist: string;
-};
+import { useQueueStore, Song } from "../../store/useQueueStore";
 
 export default function CustomerHome(): JSX.Element {
-  const [queue, setQueue] = useState<Song[]>([]);
-
-  const addToQueue = (song: Song) => {
-    setQueue((prev) => [...prev, song]);
-  };
+  const { queue, addSong } = useQueueStore();
 
   return (
     <div className="min-h-screen p-6">
@@ -37,7 +27,7 @@ export default function CustomerHome(): JSX.Element {
                   <p className="font-bold">{song.title}</p>
                   <p className="text-sm opacity-70">{song.artist}</p>
                 </div>
-                <GlowButton onClick={() => addToQueue(song)}>+ Add</GlowButton>
+                <GlowButton onClick={() => addSong(song)}>+ Add</GlowButton>
               </div>
             </NeonCard>
           </motion.div>
@@ -50,9 +40,11 @@ export default function CustomerHome(): JSX.Element {
         className="fixed bottom-4 left-4 right-4 bg-black/80 p-4 rounded-xl border border-white/20"
       >
         <p className="font-bold mb-2">Queue</p>
+
         {queue.length === 0 && <p className="opacity-50">No songs yet...</p>}
+
         {queue.map((song, i) => (
-          <p key={song.id + "-" + i} className="text-sm">
+          <p key={`${song.id}-${i}`} className="text-sm">
             {i + 1}. {song.title}
           </p>
         ))}
