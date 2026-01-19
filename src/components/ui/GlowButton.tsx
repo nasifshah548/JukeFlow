@@ -7,7 +7,7 @@ type GlowButtonProps = {
   disabled?: boolean;
 };
 
-export default function GlowButton({
+function GlowButton({
   children,
   onClick,
   type = "button",
@@ -26,3 +26,5 @@ export default function GlowButton({
     </button>
   );
 }
+
+export default GlowButton;

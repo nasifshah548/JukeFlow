@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { JSX } from "react";
 import { useQueueStore } from "../../store/useQueueStore";
 
-export default function PlayerScreen(): JSX.Element {
+function PlayerScreen(): JSX.Element {
   const { queue } = useQueueStore();
 
   const currentSong = queue[0];
@@ -30,3 +30,5 @@ export default function PlayerScreen(): JSX.Element {
     </div>
   );
 }
+
+export default PlayerScreen;

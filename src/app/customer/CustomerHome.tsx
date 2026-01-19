@@ -5,7 +5,7 @@ import NeonCard from "../../components/ui/NeonCard";
 import GlowButton from "../../components/ui/GlowButton";
 import { useQueueStore, Song } from "../../store/useQueueStore";
 
-export default function CustomerHome(): JSX.Element {
+function CustomerHome(): JSX.Element {
   const { queue, addSong } = useQueueStore();
 
   return (
@@ -52,3 +52,5 @@ export default function CustomerHome(): JSX.Element {
     </div>
   );
 }
+
+export default CustomerHome;
