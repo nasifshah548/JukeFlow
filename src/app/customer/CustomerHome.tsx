@@ -4,9 +4,16 @@ import fakeSongs from "../../data/fakeSongs";
 import NeonCard from "../../components/ui/NeonCard";
 import GlowButton from "../../components/ui/GlowButton";
 import { useQueueStore, Song } from "../../store/useQueueStore";
+import { useParams } from "react-router-dom";
 
 function CustomerHome(): JSX.Element {
-  const { queue, addSong } = useQueueStore();
+  const { roomId } = useParams();
+  const { setRoom, queue, addSong } = useQueueStore();
+
+  // Sync store with URL room
+  if (roomId) {
+    setRoom(roomId);
+  }
 
   return (
     <div className="min-h-screen p-6">

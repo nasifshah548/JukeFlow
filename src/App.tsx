@@ -1,15 +1,17 @@
+import { JSX } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CustomerHome from "./app/customer/CustomerHome";
 import PlayerScreen from "./app/player/PlayerScreen";
-import { JSX } from "react";
 
-export default function App(): JSX.Element {
+function App(): JSX.Element {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<CustomerHome />} />
-        <Route path="/player" element={<PlayerScreen />} />
+        <Route path="/" element={<PlayerScreen />} />
+        <Route path="/room/:roomId" element={<CustomerHome />} />
       </Routes>
     </BrowserRouter>
   );
 }
+
+export default App;

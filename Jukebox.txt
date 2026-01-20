@@ -1,8 +1,10 @@
-A jukebox is a coin-operated music-playing machine that lets people choose and play songs in public places like diners, cafés, bars, and arcades. Think of it as an early, physical version of a music playlist that people could control by inserting money. 🎶
+A jukebox is a coin-operated music-playing machine that lets people choose and play songs in public places like diners, cafés, bars, and arcades. Think of it 
+as an early, physical version of a music playlist that people could control by inserting money. 🎶
 
 What a Jukebox Is
 
-A Jukebox typically contains a collection of songs—originally on vinyl records, later on CDs, and now sometimes digital files. When someone inserts a coin or token, they can select a song using buttons or a touchscreen, and the machine automatically plays it through built-in speakers.
+A Jukebox typically contains a collection of songs—originally on vinyl records, later on CDs, and now sometimes digital files. When someone inserts a coin or 
+token, they can select a song using buttons or a touchscreen, and the machine automatically plays it through built-in speakers.
 
 How It Works (Simple Explanation)
 

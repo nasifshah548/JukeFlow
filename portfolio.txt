@@ -1,0 +1,4 @@
+Add this line:
+
+Built a real-time, multi-room digital jukebox platform featuring QR-based customer onboarding, global state synchronization, kiosk mode, and animated UI using
+React, TypeScript, Zustand, Framer Motion, and modern frontend architecture.
