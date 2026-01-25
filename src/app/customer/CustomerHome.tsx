@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import fakeSongs from "../../data/fakeSongs";
 import NeonCard from "../../components/ui/NeonCard";
 import GlowButton from "../../components/ui/GlowButton";
-import { useQueueStore, Song } from "../../store/useQueueStore";
+import { useQueueStore } from "../../store/useQueueStore";
+import { Song } from "../../types/song";
 import { useParams } from "react-router-dom";
 
 function CustomerHome(): JSX.Element {

@@ -5,7 +5,7 @@ type NeonCardProps = {
   className?: string;
 };
 
-export default function NeonCard({
+function NeonCard({
   children,
   className = "",
 }: NeonCardProps): JSX.Element {
@@ -19,3 +19,5 @@ export default function NeonCard({
     </div>
   );
 }
+
+export default NeonCard; 

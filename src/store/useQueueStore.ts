@@ -1,10 +1,6 @@
 import { create } from "zustand";
-
-export type Song = {
-  id: number;
-  title: string;
-  artist: string;
-};
+import { persist } from "zustand/middleware";
+import { Song } from "../types/song";
 
 type QueueState = {
   roomId: string;
@@ -15,21 +11,28 @@ type QueueState = {
   clearQueue: () => void;
 };
 
-export const useQueueStore = create<QueueState>((set) => ({
-  roomId: "default-room",
-  queue: [],
+export const useQueueStore = create<QueueState>()(
+  persist(
+    (set) => ({
+      roomId: "default-room",
+      queue: [],
 
-  setRoom: (id) => set({ roomId: id }),
+      setRoom: (id) => set({ roomId: id }),
 
-  addSong: (song) =>
-    set((state) => ({
-      queue: [...state.queue, song],
-    })),
+      addSong: (song) =>
+        set((state) => ({
+          queue: [...state.queue, song],
+        })),
 
-  nextSong: () =>
-    set((state) => ({
-      queue: state.queue.slice(1),
-    })),
+      nextSong: () =>
+        set((state) => ({
+          queue: state.queue.slice(1),
+        })),
 
-  clearQueue: () => set({ queue: [] }),
-}));
+      clearQueue: () => set({ queue: [] }),
+    }),
+    {
+      name: "jukeflow-queue",
+    },
+  ),
+);
