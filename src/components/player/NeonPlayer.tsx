@@ -5,20 +5,20 @@ import ProgressBar from "./ProgressBar";
 import VolumeSlider from "./VolumeSlider";
 import { useQueueStore } from "../../store/useQueueStore";
 
+type PlayMode = "normal" | "loop" | "shuffle";
+
 function NeonPlayer() {
   const { queue } = useQueueStore();
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(0.7);
+  const [mode, setMode] = useState<PlayMode>("normal");
 
   const currentSong = queue[currentIndex];
-
-  type PlayMode = "normal" | "loop" | "shuffle";
-
-  const [mode, setMode] = useState<PlayMode>("normal");
 
   // Load & play song
   useEffect(() => {
@@ -35,7 +35,7 @@ function NeonPlayer() {
     if (isPlaying) {
       audioRef.current.play();
     }
-  }, [currentSong]);
+  }, [currentSong, isPlaying, volume]);
 
   // Progress tracking + auto-next
   useEffect(() => {
@@ -44,7 +44,8 @@ function NeonPlayer() {
     const audio = audioRef.current;
 
     const updateProgress = () => {
-      setProgress((audio.currentTime / audio.duration) * 100 || 0);
+      if (!audio.duration) return;
+      setProgress((audio.currentTime / audio.duration) * 100);
     };
 
     const handleEnded = () => {
@@ -57,12 +58,12 @@ function NeonPlayer() {
       if (mode === "shuffle") {
         if (queue.length <= 1) return;
 
-        let next;
-        do {
-          next = Math.floor(Math.random() * queue.length);
-        } while (next === currentIndex);
+        let nextIndex = currentIndex;
+        while (nextIndex === currentIndex) {
+          nextIndex = Math.floor(Math.random() * queue.length);
+        }
 
-        setCurrentIndex(next);
+        setCurrentIndex(nextIndex);
         setIsPlaying(true);
         return;
       }
@@ -84,7 +85,7 @@ function NeonPlayer() {
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [currentIndex, queue.length]);
+  }, [currentIndex, queue.length, mode]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -94,7 +95,8 @@ function NeonPlayer() {
     } else {
       audioRef.current.play();
     }
-    setIsPlaying(!isPlaying);
+
+    setIsPlaying((p) => !p);
   };
 
   const toggleLoop = () => {
@@ -120,9 +122,8 @@ function NeonPlayer() {
   };
 
   const seek = (value: number) => {
-    if (!audioRef.current) return;
-    const audio = audioRef.current;
-    audio.currentTime = (value / 100) * audio.duration;
+    if (!audioRef.current || !audioRef.current.duration) return;
+    audioRef.current.currentTime = (value / 100) * audioRef.current.duration;
     setProgress(value);
   };
 
@@ -159,15 +160,16 @@ function NeonPlayer() {
         onNext={nextSong}
         onPrev={prevSong}
       />
+
       <div className="flex justify-center gap-4 mt-3">
         <button
           onClick={toggleLoop}
           className={`px-4 py-1 rounded-full text-sm transition
-      ${
-        mode === "loop"
-          ? "bg-cyan-400 text-black shadow-glow"
-          : "border border-cyan-400/40 text-cyan-300"
-      }`}
+          ${
+            mode === "loop"
+              ? "bg-cyan-400 text-black shadow-glow"
+              : "border border-cyan-400/40 text-cyan-300"
+          }`}
         >
           🔁 Loop
         </button>
@@ -175,11 +177,11 @@ function NeonPlayer() {
         <button
           onClick={toggleShuffle}
           className={`px-4 py-1 rounded-full text-sm transition
-      ${
-        mode === "shuffle"
-          ? "bg-pink-400 text-black shadow-glow"
-          : "border border-pink-400/40 text-pink-300"
-      }`}
+          ${
+            mode === "shuffle"
+              ? "bg-pink-400 text-black shadow-glow"
+              : "border border-pink-400/40 text-pink-300"
+          }`}
         >
           🎲 Shuffle
         </button>

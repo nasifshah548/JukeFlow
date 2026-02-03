@@ -1,21 +1,22 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { JSX } from "react";
-import { QRCodeCanvas } from "qrcode.react";
 import { useQueueStore } from "../../store/useQueueStore";
 import ControlButton from "../../components/ui/ControlButton";
+import RoomQR from "../../components/room/RoomQR";
+import NeonPlayer from "../../components/player/NeonPlayer";
 
-function PlayerScreen(): JSX.Element {
-  const { queue, nextSong, clearQueue, roomId, setRoom } = useQueueStore();
+function PlayerScreen() {
+  const { queue, roomId, setRoom } = useQueueStore();
 
   const currentSong = queue[0];
 
-  // Generate room once
-  if (!roomId || roomId === "default-room") {
-    const newRoom = crypto.randomUUID().slice(0, 8);
-    setRoom(newRoom);
-  }
-
-  const roomUrl = `${window.location.origin}/room/${roomId}`;
+  // Generate room ONCE
+  useEffect(() => {
+    if (!roomId || roomId === "default-room") {
+      const newRoom = crypto.randomUUID().slice(0, 8);
+      setRoom(newRoom);
+    }
+  }, [roomId, setRoom]);
 
   const enterFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -38,16 +39,7 @@ function PlayerScreen(): JSX.Element {
       </motion.div>
 
       {/* QR Code */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-4 rounded-xl shadow-lg"
-      >
-        <QRCodeCanvas value={roomUrl} size={180} />
-        <p className="text-center mt-2 text-sm font-bold">
-          Scan to Join Jukebox
-        </p>
-      </motion.div>
+      <RoomQR roomId={roomId} />
 
       {currentSong && (
         <div className="text-center">
@@ -57,14 +49,15 @@ function PlayerScreen(): JSX.Element {
       )}
 
       <div className="flex flex-wrap gap-6 justify-center">
-        <ControlButton label="⏭ Next Song" onClick={nextSong} />
-        <ControlButton label="🧹 Clear Queue" onClick={clearQueue} />
         <ControlButton label="🖥 Fullscreen" onClick={enterFullscreen} />
       </div>
 
       <p className="opacity-50">
         Room ID: {roomId} | Songs in Queue: {queue.length}
       </p>
+
+      {/* Global Player */}
+      <NeonPlayer />
     </div>
   );
 }

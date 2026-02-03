@@ -1,38 +1,74 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { Song } from "../types/song";
+import { getSocket } from "../lib/socket";
+
+export type Song = {
+  id: number;
+  title: string;
+  artist: string;
+  audioUrl: string;
+};
 
 type QueueState = {
   roomId: string;
   queue: Song[];
+  isPlaying: boolean;
   setRoom: (id: string) => void;
   addSong: (song: Song) => void;
-  nextSong: () => void;
-  clearQueue: () => void;
+  syncQueue: (queue: Song[]) => void;
+  play: () => void;
+  pause: () => void;
 };
 
-export const useQueueStore = create<QueueState>()(
-  persist(
-    (set) => ({
-      roomId: "default-room",
-      queue: [],
+const socket = getSocket();
 
-      setRoom: (id) => set({ roomId: id }),
+export const useQueueStore = create<QueueState>((set, get) => ({
+  roomId: "default-room",
+  queue: [],
+  isPlaying: false,
 
-      addSong: (song) =>
-        set((state) => ({
-          queue: [...state.queue, song],
-        })),
+  setRoom: (id) => {
+    socket.emit("join-room", id);
+    set({ roomId: id });
+  },
 
-      nextSong: () =>
-        set((state) => ({
-          queue: state.queue.slice(1),
-        })),
+  addSong: (song) => {
+    const roomId = get().roomId;
+    socket.emit("add-song", { roomId, song });
+  },
 
-      clearQueue: () => set({ queue: [] }),
-    }),
-    {
-      name: "jukeflow-queue",
-    },
-  ),
-);
+  syncQueue: (queue) => {
+    set({ queue });
+  },
+
+  play: () => {
+    const roomId = get().roomId;
+    socket.emit("play", roomId);
+    set({ isPlaying: true });
+  },
+
+  pause: () => {
+    const roomId = get().roomId;
+    socket.emit("pause", roomId);
+    set({ isPlaying: false });
+  },
+}));
+
+// Global listeners
+socket.on("queue-updated", (queue) => {
+  useQueueStore.getState().syncQueue(queue);
+});
+
+socket.on("play", () => {
+  useQueueStore.setState({ isPlaying: true });
+});
+
+socket.on("pause", () => {
+  useQueueStore.setState({ isPlaying: false });
+});
+
+socket.on("room-state", (state) => {
+  useQueueStore.setState({
+    queue: state.queue,
+    isPlaying: state.isPlaying,
+  });
+});
