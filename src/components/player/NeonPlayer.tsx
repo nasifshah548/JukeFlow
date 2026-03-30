@@ -8,19 +8,29 @@ import { useQueueStore } from "../../store/useQueueStore";
 type PlayMode = "normal" | "loop" | "shuffle";
 
 function NeonPlayer() {
-  const { queue } = useQueueStore();
+  const { queue, votes, totalUsers, voteSkip, roomId } = useQueueStore();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(0.7);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [volume, setVolume] = useState<number>(0.7);
   const [mode, setMode] = useState<PlayMode>("normal");
 
   const currentSong = queue[currentIndex];
 
-  // Load & play song
+  const votesNeeded = Math.max(1, Math.ceil(totalUsers / 2));
+  const votePercentage = Math.min((votes / votesNeeded) * 100, 100);
+
+  // 🔑 Consistent vote key
+  const voteKey =
+    currentSong && roomId ? `jukeflow-${roomId}-${currentSong.id}` : "";
+
+  // ✅ Derived state (NO useEffect needed)
+  const hasVoted = voteKey !== "" && localStorage.getItem(voteKey) !== null;
+
+  // 🎵 Load & play song
   useEffect(() => {
     if (!currentSong) return;
 
@@ -37,7 +47,7 @@ function NeonPlayer() {
     }
   }, [currentSong, isPlaying, volume]);
 
-  // Progress tracking + auto-next
+  // ⏱ Progress + Auto Next
   useEffect(() => {
     if (!audioRef.current) return;
 
@@ -68,7 +78,6 @@ function NeonPlayer() {
         return;
       }
 
-      // Normal mode
       if (currentIndex < queue.length - 1) {
         setCurrentIndex((i) => i + 1);
         setIsPlaying(true);
@@ -87,6 +96,7 @@ function NeonPlayer() {
     };
   }, [currentIndex, queue.length, mode]);
 
+  // ▶️ Play / Pause
   const togglePlay = () => {
     if (!audioRef.current) return;
 
@@ -96,17 +106,20 @@ function NeonPlayer() {
       audioRef.current.play();
     }
 
-    setIsPlaying((p) => !p);
+    setIsPlaying((prev) => !prev);
   };
 
+  // 🔁 Loop
   const toggleLoop = () => {
     setMode((m) => (m === "loop" ? "normal" : "loop"));
   };
 
+  // 🎲 Shuffle
   const toggleShuffle = () => {
     setMode((m) => (m === "shuffle" ? "normal" : "shuffle"));
   };
 
+  // ⏭ Next
   const nextSong = () => {
     if (currentIndex < queue.length - 1) {
       setCurrentIndex((i) => i + 1);
@@ -114,6 +127,7 @@ function NeonPlayer() {
     }
   };
 
+  // ⏮ Prev
   const prevSong = () => {
     if (currentIndex > 0) {
       setCurrentIndex((i) => i - 1);
@@ -121,14 +135,19 @@ function NeonPlayer() {
     }
   };
 
+  // 🎯 Seek
   const seek = (value: number) => {
     if (!audioRef.current || !audioRef.current.duration) return;
+
     audioRef.current.currentTime = (value / 100) * audioRef.current.duration;
+
     setProgress(value);
   };
 
+  // 🔊 Volume
   const changeVolume = (value: number) => {
     if (!audioRef.current) return;
+
     audioRef.current.volume = value;
     setVolume(value);
   };
@@ -144,16 +163,20 @@ function NeonPlayer() {
       border border-cyan-400/20
       rounded-2xl p-4 shadow-lg shadow-cyan-500/20"
     >
+      {/* 🎵 Song Info */}
       <div className="flex justify-between items-center mb-2">
         <div>
           <p className="font-bold text-cyan-300">{currentSong.title}</p>
           <p className="text-sm opacity-70">{currentSong.artist}</p>
         </div>
+
         <VolumeSlider volume={volume} onChange={changeVolume} />
       </div>
 
+      {/* 📊 Progress */}
       <ProgressBar progress={progress} onSeek={seek} />
 
+      {/* 🎛 Controls */}
       <PlayerControls
         isPlaying={isPlaying}
         onPlayPause={togglePlay}
@@ -161,6 +184,7 @@ function NeonPlayer() {
         onPrev={prevSong}
       />
 
+      {/* 🔁 Loop & Shuffle */}
       <div className="flex justify-center gap-4 mt-3">
         <button
           onClick={toggleLoop}
@@ -185,6 +209,47 @@ function NeonPlayer() {
         >
           🎲 Shuffle
         </button>
+      </div>
+
+      {/* 🗳 Vote to Skip */}
+      <div className="flex flex-col items-center mt-4">
+        <button
+          onClick={() => {
+            if (hasVoted || !voteKey) return;
+
+            voteSkip();
+            localStorage.setItem(voteKey, "true");
+          }}
+          disabled={hasVoted}
+          className={`px-6 py-2 rounded-full font-bold transition shadow-lg
+          ${
+            hasVoted
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-red-500 text-white hover:scale-105"
+          }`}
+        >
+          {hasVoted ? "✅ Voted" : "⏭ Vote to Skip"}
+        </button>
+
+        <p className="text-sm mt-2 opacity-70">
+          {votes} / {Math.ceil(totalUsers / 2)} votes needed
+        </p>
+      </div>
+
+      {/* 📊 Vote Progress Bar */}
+      <div className="w-full max-w-md mt-3">
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${votePercentage}%` }}
+            transition={{ duration: 0.4 }}
+            className="h-full bg-gradient-to-r from-red-400 to-pink-500 shadow-glow"
+          />
+        </div>
+
+        <p className="text-xs text-center mt-1 opacity-70">
+          {votes} / {votesNeeded} votes to skip
+        </p>
       </div>
     </motion.div>
   );
