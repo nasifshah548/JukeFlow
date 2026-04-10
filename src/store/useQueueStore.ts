@@ -15,7 +15,7 @@ type QueueState = {
 
   // ✅ Voting system
   votes: number;
-  totalUsers: number;
+  totalUsers: number; // 👥 actual users in room
 
   setRoom: (id: string) => void;
   addSong: (song: Song) => void;
@@ -39,9 +39,9 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   queue: [],
   isPlaying: false,
 
-  // ✅ Initialize voting state
+  // ✅ Initialize
   votes: 0,
-  totalUsers: 1,
+  totalUsers: 0,
 
   setRoom: (id) => {
     socket.emit("join-room", id);
@@ -69,7 +69,6 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     set({ isPlaying: false });
   },
 
-  // ✅ IMPLEMENTED (this was missing)
   voteSkip: () => {
     const roomId = get().roomId;
     socket.emit("vote-skip", roomId);
@@ -85,12 +84,12 @@ socket.on("queue-updated", (queue: Song[]) => {
   useQueueStore.getState().syncQueue(queue);
 });
 
-// Play / Pause sync
-socket.on("play", () => {
+// Play / Pause sync (NOTE: your backend uses play-sync / pause-sync)
+socket.on("play-sync", () => {
   useQueueStore.setState({ isPlaying: true });
 });
 
-socket.on("pause", () => {
+socket.on("pause-sync", () => {
   useQueueStore.setState({ isPlaying: false });
 });
 
@@ -102,10 +101,16 @@ socket.on("room-state", (state: RoomState) => {
   });
 });
 
-// ✅ NEW: Vote updates
-socket.on("vote-update", ({ votes, total }) => {
+// ✅ Vote updates (DO NOT overwrite totalUsers here)
+socket.on("vote-update", ({ votes }) => {
   useQueueStore.setState({
     votes,
-    totalUsers: total,
+  });
+});
+
+// ✅ NEW: User count (THIS is the real user count)
+socket.on("user-count", (count: number) => {
+  useQueueStore.setState({
+    totalUsers: count,
   });
 });

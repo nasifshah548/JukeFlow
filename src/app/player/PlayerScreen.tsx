@@ -6,7 +6,7 @@ import RoomQR from "../../components/room/RoomQR";
 import NeonPlayer from "../../components/player/NeonPlayer";
 
 function PlayerScreen() {
-  const { queue, roomId, setRoom } = useQueueStore();
+  const { queue, roomId, setRoom, totalUsers } = useQueueStore();
 
   const currentSong = queue[0];
 
@@ -53,7 +53,7 @@ function PlayerScreen() {
       </div>
 
       <p className="opacity-50">
-        Room ID: {roomId} | Songs in Queue: {queue.length}
+        Room ID: {roomId} | Users: {totalUsers} | Songs: {queue.length}
       </p>
 
       {/* Global Player */}

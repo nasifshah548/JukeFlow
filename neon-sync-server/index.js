@@ -10,53 +10,18 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // allow frontend connection
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
 
-// In-memory room state (later can be DB/Redis)
+// In-memory room state
 const rooms = {};
 
 io.on("connection", (socket) => {
-  // Vote to skip
-  socket.on("vote-skip", (roomId) => {
-    const room = rooms[roomId];
-    if (!room) return;
+  console.log("🟢 Connected:", socket.id);
 
-    room.votes.add(socket.id);
-
-    const totalClients = io.sockets.adapter.rooms.get(roomId)?.size || 1;
-    const votes = room.votes.size;
-
-    console.log(`🗳 Votes: ${votes}/${totalClients}`);
-
-    io.to(roomId).emit("vote-update", {
-      votes,
-      total: totalClients,
-    });
-
-    // Threshold: 50%
-    if (votes >= Math.ceil(totalClients / 2)) {
-      // Skip song
-      room.queue.shift();
-      room.votes.clear();
-
-      io.to(roomId).emit("queue-updated", room.queue);
-
-      // Auto play next
-      const now = Date.now();
-      room.startTime = now;
-
-      io.to(roomId).emit("play-sync", {
-        startTime: now,
-      });
-
-      console.log("⏭ Song skipped by votes");
-    }
-  });
-
-  // Join room
+  // 🏠 JOIN ROOM
   socket.on("join-room", (roomId) => {
     socket.join(roomId);
 
@@ -67,37 +32,48 @@ io.on("connection", (socket) => {
         startTime: null,
         currentTime: 0,
         votes: new Set(),
+        users: new Set(), // ✅ NEW
       };
     }
 
+    const room = rooms[roomId];
+
+    // ✅ Track user
+    room.users.add(socket.id);
+
     console.log(`👤 ${socket.id} joined room ${roomId}`);
 
+    // 🔥 Emit updated user count
+    io.to(roomId).emit("user-count", room.users.size);
+
     // Send current state to new user
-    socket.emit("room-state", rooms[roomId]);
+    socket.emit("room-state", {
+      queue: room.queue,
+      isPlaying: room.isPlaying,
+      currentTime: room.currentTime,
+    });
   });
 
-  // Add song
+  // ➕ ADD SONG
   socket.on("add-song", ({ roomId, song }) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    // Add song to queue
     room.queue.push(song);
 
-    // Reset votes whenever queue changes
+    // ✅ Reset votes when queue changes
     room.votes.clear();
 
-    // Broadcast updated queue
     io.to(roomId).emit("queue-updated", room.queue);
 
-    // Reset vote UI for all clients
+    // Reset vote UI
     io.to(roomId).emit("vote-update", {
       votes: 0,
-      total: io.sockets.adapter.rooms.get(roomId)?.size || 1,
+      total: room.users.size || 1,
     });
   });
 
-  // Play (sync)
+  // ▶️ PLAY (SYNC)
   socket.on("play", (roomId) => {
     const room = rooms[roomId];
     if (!room) return;
@@ -114,7 +90,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Pause (sync)
+  // ⏸ PAUSE (SYNC)
   socket.on("pause", (roomId) => {
     const room = rooms[roomId];
     if (!room || !room.startTime) return;
@@ -131,13 +107,61 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Disconnect
+  // 🗳 VOTE TO SKIP
+  socket.on("vote-skip", (roomId) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    room.votes.add(socket.id);
+
+    const totalClients = room.users.size || 1;
+    const votes = room.votes.size;
+
+    console.log(`🗳 Votes: ${votes}/${totalClients}`);
+
+    io.to(roomId).emit("vote-update", {
+      votes,
+      total: totalClients,
+    });
+
+    // ✅ Threshold = 50%
+    if (votes >= Math.ceil(totalClients / 2)) {
+      room.queue.shift();
+      room.votes.clear();
+
+      io.to(roomId).emit("queue-updated", room.queue);
+
+      const now = Date.now();
+      room.startTime = now;
+
+      io.to(roomId).emit("play-sync", {
+        startTime: now,
+      });
+
+      console.log("⏭ Song skipped by votes");
+    }
+  });
+
+  // ❌ DISCONNECT
   socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
+    console.log("❌ Disconnected:", socket.id);
+
+    for (const roomId in rooms) {
+      const room = rooms[roomId];
+
+      if (room.users.has(socket.id)) {
+        room.users.delete(socket.id);
+
+        // 🔥 Update user count
+        io.to(roomId).emit("user-count", room.users.size);
+
+        console.log(`👤 ${socket.id} left room ${roomId}`);
+      }
+    }
   });
 });
 
-// Basic health check route
+// 🌐 Health check
 app.get("/", (req, res) => {
   res.send("Neon Sync Server is running 🚀");
 });
