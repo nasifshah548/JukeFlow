@@ -1,3 +1,10 @@
+declare global {
+  interface Window {
+    __jukeflow_startTime?: number;
+    __jukeflow_pauseTime?: number;
+  }
+}
+
 import { create } from "zustand";
 import { getSocket } from "../lib/socket";
 
@@ -30,6 +37,19 @@ type RoomState = {
   isPlaying: boolean;
   startTime?: number;
   currentTime?: number;
+};
+
+type PlaySyncPayload = {
+  startTime: number;
+};
+
+type PauseSyncPayload = {
+  currentTime: number;
+};
+
+type VoteUpdatePayload = {
+  votes: number;
+  total: number;
 };
 
 const socket = getSocket();
@@ -84,13 +104,24 @@ socket.on("queue-updated", (queue: Song[]) => {
   useQueueStore.getState().syncQueue(queue);
 });
 
-// Play / Pause sync (NOTE: your backend uses play-sync / pause-sync)
-socket.on("play-sync", () => {
-  useQueueStore.setState({ isPlaying: true });
+// Play Sync
+socket.on("play-sync", (data: PlaySyncPayload) => {
+  console.log("Sync startTime:", data.startTime);
+
+  useQueueStore.setState({
+    isPlaying: true,
+  });
+
+  window.__jukeflow_startTime = data.startTime;
 });
 
-socket.on("pause-sync", () => {
-  useQueueStore.setState({ isPlaying: false });
+// ⏸ PAUSE SYNC
+socket.on("pause-sync", ({ currentTime }: PauseSyncPayload) => {
+  useQueueStore.setState({
+    isPlaying: false,
+  });
+
+  window.__jukeflow_pauseTime = currentTime;
 });
 
 // Initial room state
@@ -101,10 +132,11 @@ socket.on("room-state", (state: RoomState) => {
   });
 });
 
-// ✅ Vote updates (DO NOT overwrite totalUsers here)
-socket.on("vote-update", ({ votes }) => {
+// Vote updates
+socket.on("vote-update", (data: VoteUpdatePayload) => {
   useQueueStore.setState({
-    votes,
+    votes: data.votes,
+    totalUsers: data.total,
   });
 });
 

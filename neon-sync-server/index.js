@@ -126,11 +126,22 @@ io.on("connection", (socket) => {
 
     // ✅ Threshold = 50%
     if (votes >= Math.ceil(totalClients / 2)) {
+      // ⏭ Remove current song
       room.queue.shift();
+
+      // 🔄 Reset votes
       room.votes.clear();
 
+      // 📢 Update queue
       io.to(roomId).emit("queue-updated", room.queue);
 
+      // 📢 Reset vote UI
+      io.to(roomId).emit("vote-update", {
+        votes: 0,
+        total: totalClients,
+      });
+
+      // ▶️ Auto play next song
       const now = Date.now();
       room.startTime = now;
 
@@ -138,7 +149,7 @@ io.on("connection", (socket) => {
         startTime: now,
       });
 
-      console.log("⏭ Song skipped by votes");
+      console.log("🔥 Auto-skip triggered by votes");
     }
   });
 
