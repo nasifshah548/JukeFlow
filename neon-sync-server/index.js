@@ -32,25 +32,27 @@ io.on("connection", (socket) => {
         startTime: null,
         currentTime: 0,
         votes: new Set(),
-        users: new Set(), // ✅ NEW
+        users: new Set(),
+        hostId: socket.id, // 👑 FIRST USER = HOST
       };
     }
 
     const room = rooms[roomId];
 
-    // ✅ Track user
+    // Track user
     room.users.add(socket.id);
 
     console.log(`👤 ${socket.id} joined room ${roomId}`);
 
-    // 🔥 Emit updated user count
+    // Emit user count
     io.to(roomId).emit("user-count", room.users.size);
 
-    // Send current state to new user
+    // Send room state + host info
     socket.emit("room-state", {
       queue: room.queue,
       isPlaying: room.isPlaying,
       currentTime: room.currentTime,
+      isHost: socket.id === room.hostId, // 👑
     });
   });
 
@@ -61,19 +63,18 @@ io.on("connection", (socket) => {
 
     room.queue.push(song);
 
-    // ✅ Reset votes when queue changes
+    // Reset votes
     room.votes.clear();
 
     io.to(roomId).emit("queue-updated", room.queue);
 
-    // Reset vote UI
     io.to(roomId).emit("vote-update", {
       votes: 0,
       total: room.users.size || 1,
     });
   });
 
-  // ▶️ PLAY (SYNC)
+  // ▶️ PLAY
   socket.on("play", (roomId) => {
     const room = rooms[roomId];
     if (!room) return;
@@ -90,7 +91,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ⏸ PAUSE (SYNC)
+  // ⏸ PAUSE
   socket.on("pause", (roomId) => {
     const room = rooms[roomId];
     if (!room || !room.startTime) return;
@@ -107,7 +108,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 🗳 VOTE TO SKIP
+  // 🗳 VOTE SKIP
   socket.on("vote-skip", (roomId) => {
     const room = rooms[roomId];
     if (!room) return;
@@ -124,24 +125,18 @@ io.on("connection", (socket) => {
       total: totalClients,
     });
 
-    // ✅ Threshold = 50%
+    // 50% threshold
     if (votes >= Math.ceil(totalClients / 2)) {
-      // ⏭ Remove current song
       room.queue.shift();
-
-      // 🔄 Reset votes
       room.votes.clear();
 
-      // 📢 Update queue
       io.to(roomId).emit("queue-updated", room.queue);
 
-      // 📢 Reset vote UI
       io.to(roomId).emit("vote-update", {
         votes: 0,
         total: totalClients,
       });
 
-      // ▶️ Auto play next song
       const now = Date.now();
       room.startTime = now;
 
@@ -151,6 +146,37 @@ io.on("connection", (socket) => {
 
       console.log("🔥 Auto-skip triggered by votes");
     }
+  });
+
+  // 👑 FORCE SKIP (HOST ONLY)
+  socket.on("force-skip", (roomId) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    // Only host allowed
+    if (socket.id !== room.hostId) {
+      console.log("🚫 Non-host tried to force skip");
+      return;
+    }
+
+    room.queue.shift();
+    room.votes.clear();
+
+    io.to(roomId).emit("queue-updated", room.queue);
+
+    io.to(roomId).emit("vote-update", {
+      votes: 0,
+      total: room.users.size || 1,
+    });
+
+    const now = Date.now();
+    room.startTime = now;
+
+    io.to(roomId).emit("play-sync", {
+      startTime: now,
+    });
+
+    console.log("👑 Host forced skip");
   });
 
   // ❌ DISCONNECT
@@ -163,7 +189,21 @@ io.on("connection", (socket) => {
       if (room.users.has(socket.id)) {
         room.users.delete(socket.id);
 
-        // 🔥 Update user count
+        // 👑 If host leaves → assign new host
+        if (socket.id === room.hostId) {
+          const nextUser = room.users.values().next().value;
+
+          room.hostId = nextUser || null;
+
+          if (nextUser) {
+            io.to(roomId).emit("host-updated", {
+              hostId: nextUser,
+            });
+
+            console.log(`👑 New host assigned: ${nextUser}`);
+          }
+        }
+
         io.to(roomId).emit("user-count", room.users.size);
 
         console.log(`👤 ${socket.id} left room ${roomId}`);
