@@ -1,0 +1,7 @@
+🚀 GitHub “About” Description
+
+Short (one-liner):
+A modern wireless jukebox that brings the classic shared music experience into the real-time, multi-user web era.
+
+Full Description:
+JukeFlow - is a real-time, wireless jukebox platform that reimagines the classic jukebox experience for the modern world. The users can join a shared room from their own devices, add songs to a live queue, and enjoy perfectly synchronized playback together. Powered by React, Zustand, Socket.IO, and Node.js, the app blends nostalgia with modern real-time technology—featuring live vote-to-skip, host controls, and seamless multi-user interaction.

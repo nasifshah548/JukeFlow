@@ -1,4 +1,19 @@
-Add this line:
+🌐 Portfolio Description (Clean + Vision Driven)
 
-Built a real-time, multi-room digital jukebox platform featuring QR-based customer onboarding, global state synchronization, kiosk mode, and animated UI using
-React, TypeScript, Zustand, Framer Motion, and modern frontend architecture.
+Project Title:
+JukeFlow – The Wireless Jukebox Experience
+
+Description:
+A modern take on the classic jukebox—fully wireless, real-time, and collaborative. JukeFlow allows multiple users to connect to a shared room, queue songs, and listen together in perfect sync, recreating the social music experience for the digital era.
+
+Key Highlights:
+
+- Wireless multi-user music system with real-time synchronized playback
+
+- Collaborative jukebox-style queue with live voting and skip control
+
+- Host-based room management for shared listening experiences
+
+💡 Strong Tagline (use anywhere)
+
+A wireless jukebox that transforms shared music into a real-time and provides interactive experience.
